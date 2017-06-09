@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.2)
+project(opt)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_FLAGS -g)
+add_executable(optimize main.c)
+add_executable(game play.c)
+add_executable(reader reader.c)
+add_library(snake SHARED snake.c)
+add_library(nn SHARED nn.c)
+link_directories(${CMAKE_CURRENT_BINARY_DIR}/snake)
+target_link_libraries(optimize -lm snake nn)
+target_link_libraries(game m X11 snake nn)

@@ -13,39 +13,8 @@ double *get_inputs() {
     size_t target_input = 0;
     result[target_input++] = (hx == fx) ? 0 : (hx < fx ? 1 : -1);
     result[target_input++] = (hy == fy) ? 0 : (hy < fy ? 1 : -1);
-//    result[target_input] = 0;
-//    for (size_t x = 0; x < gw; x++) {
-//        for (size_t y = 0; y < gh; y++) {
-//            result[target_input] += grid[x][y] < wall;
-//        }
-//    }
-//    result[target_input++] /= gw * gh;
-//    result[target_input++] = grid[hx][hy] == right - grid[hx][hy] == left;
-//    result[target_input++] = grid[hx][hy] == up - grid[hx][hy] == down;
-
-
-//    result[target_input++] = grid[hx][hy] == left;
-//    result[target_input++] = grid[hx][hy] == right;
-//
-//    result[target_input++] = grid[hx][hy] == up;
-//    result[target_input++] = grid[hx][hy] == down;
-
-    // TODO: Make this less expensive!!
-//    for (size_t x = hx - 1; x <= hx + 1; x++) {
-//        for (size_t y = hy - 1; y <= hy + 1; y++) {
-//            if (x != hx || y != hy) {
-//                if (x >= gw || y >= gh) {
-//                    result[target_input++] = -1;
-//                } else {
-//                    result[target_input++] = (
-//                            grid[x][y] == empty ? 0.5 : (grid[x][y] < empty ? (grid[x][y] == wall ? -1 : -0.5) : 1)
-//                    );
-//                }
-//            }
-//        }
-//    }
-    size_t x[] = {hx - 1, hx + 1, hx, hx, hx - 2, hx - 2, hx + 2, hx + 2};
-    size_t y[] = {hy, hy, hy - 1, hy + 1, hy - 2, hy + 2, hy - 2, hy + 2};
+    size_t x[] = {hx - 1, hx - 1, hx - 1, hx + 1, hx + 1, hx + 1, hx    , hx    };
+    size_t y[] = {hy - 1, hy    , hy + 1, hy - 1, hy    , hy + 1, hy - 1, hy + 1};
     for (char i = 0; i < 8; i++) {
         if (x[i] >= gw || y[i] >= gh) {
             result[target_input++] = -1;

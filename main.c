@@ -7,7 +7,6 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include <assert.h>
 #include "snake.h"
 #include "nn.h"
 
@@ -69,10 +68,8 @@ double nn_fitness(double *weights, size_t w, size_t h) {
         char current_state = moved;
         double current_score = 0;
         size_t snake_length = 1;
-        double memory = 0;
         while (current_state != won && current_state != lost && move_counter < max_game_moves) {
             double *inputs = get_inputs();
-            inputs[layout[0] - 1] = memory;
             double *outputs = malloc(sizeof(double) * layout[layers - 1]);
             nn(inputs, weights, outputs, tanh);
             char direction = 0;
@@ -81,7 +78,6 @@ double nn_fitness(double *weights, size_t w, size_t h) {
                     direction = i;
                 }
             }
-            memory = outputs[layout[layers - 1] - 1];
             free(outputs);
             current_state = move_snake(direction);
             current_score += score_multiplier[current_state] * (double) snake_length;
@@ -291,9 +287,9 @@ int main(int argc, char *argv[]) {
     srand((unsigned) time(NULL));
     layers = 3;
     layout = malloc(sizeof(size_t) * layers);
-    layout[0] = 11;
-    layout[1] = 11;
-    layout[2] = 5;
+    layout[0] = 10;
+    layout[1] = 4;
+    layout[2] = 4;
     size_t dimensions = 0;
     for (size_t l = 0; l < layers - 1; l++) {
         dimensions += (layout[l] + 1) * layout[l + 1];
@@ -369,7 +365,7 @@ int main(int argc, char *argv[]) {
         listen(socket_fd, 100000);
         if (type == 1) {
             // Remote address is not used here.
-            for (size_t size = 4; size < 10; size++) {
+            for (size_t size = 2; size < 10; size++) {
                 gw = size;
                 gh = size;
                 double max_score = calc_max_score();

@@ -13,9 +13,9 @@ double *get_inputs() {
     size_t target_input = 0;
     result[target_input++] = (hx == fx) ? 0 : (hx < fx ? 1 : -1);
     result[target_input++] = (hy == fy) ? 0 : (hy < fy ? 1 : -1);
-    size_t x[] = {hx - 1, hx - 1, hx - 1, hx + 1, hx + 1, hx + 1, hx    , hx    };
-    size_t y[] = {hy - 1, hy    , hy + 1, hy - 1, hy    , hy + 1, hy - 1, hy + 1};
-    for (char i = 0; i < 8; i++) {
+    size_t x[] = {hx - 1, hx + 1, hx    , hx};
+    size_t y[] = {hy    , hy    , hy - 1, hy + 1};
+    for (char i = 0; i < 4; i++) {
         if (x[i] >= gw || y[i] >= gh) {
             result[target_input++] = -1;
         } else {

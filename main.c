@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
     srand((unsigned) time(NULL));
     layers = 3;
     layout = malloc(sizeof(size_t) * layers);
-    layout[0] = 10;
+    layout[0] = 6;
     layout[1] = 4;
     layout[2] = 4;
     size_t dimensions = 0;

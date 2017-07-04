@@ -1,4 +1,3 @@
-// NOTE: From the available options, this agent would prefer the direction of the food or less dense areas
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -26,6 +25,25 @@ int main() {
                 char current_state = moved;
                 size_t snake_length = 1;
                 while (current_state != won && current_state != lost && move_counter < max_game_moves) {
+                    int mask = 0;
+                    size_t x[] = {hx - 1, hx - 1, hx - 1, hx + 1, hx + 1, hx + 1, hx    , hx    };
+                    size_t y[] = {hy - 1, hy    , hy + 1, hy - 1, hy    , hy + 1, hy - 1, hy + 1};
+                    int adds[] = {1     , 2     , 4     , 8     , 16    , 32    , 64   , 128};
+                    for (char i = 0; i < 8; i++) {
+                        if (x[i] >= gw || y[i] >= gh || grid[x[i]][y[i]] < empty) {
+                            mask += adds[i];
+                        }
+                    }
+                    char option_preference[4] = {0,0,0,0};
+                    if (mask & 1  || mask & 128) option_preference[left]  = 1;
+                    if (mask & 2  || mask & 4  ) option_preference[up]    = 1;
+                    if (mask & 8  || mask & 16 ) option_preference[right] = 1;
+                    if (mask & 32 || mask & 64 ) option_preference[down]  = 1;
+                    for (char i = 0; i < 4; i++)
+                        if (xmod[i] != 0)
+                            option_preference[i] += hx + xmod[i] > hx ? fx > hx : fx < hx;
+                        else
+                            option_preference[i] += hy + ymod[i] > hy ? fy > hy : fy < hy;
                     char directions[4];
                     char choice = 0;
                     char options = 0;
@@ -34,34 +52,10 @@ int main() {
                             if (grid[hx + xmod[i]][hy + ymod[i]] > wall)
                                 directions[options++] = i;
                     if (options > 0) {
-                        char option_densities[options];
-                        for (char o = 0; o < options; o++) {
-                            if (xmod[directions[o]] != 0) {
-                                option_densities[o] = hx + xmod[directions[o]] > hx ? (fx > hx) * -1 : (fx < hx) * -1;
-                                if (hy + 1 < gh)
-                                    option_densities[o] += (grid[hx + xmod[directions[o]]][hy + 1] < empty);
-                                else
-                                    option_densities[o] += 1;
-                                if (hy - 1 < gh)
-                                    option_densities[o] += (grid[hx + xmod[directions[o]]][hy - 1] < empty);
-                                else
-                                    option_densities[o] += 1;
-                            } else {
-                                option_densities[o] = hy + ymod[directions[o]] > hy ? (fy > hy) * -1 : (fy < hy) * -1;
-                                if (hx + 1 < gw)
-                                    option_densities[o] += (grid[hx + 1][hy + ymod[directions[o]]] < empty);
-                                else
-                                    option_densities[o] += 1;
-                                if (hx - 1 < gw)
-                                    (grid[hx - 1][hy + ymod[directions[o]]] < empty);
-                                else
-                                    option_densities[o] += 1;
-                            }
-                        }
                         choice = rand() % options;
                         char max = options + choice;
                         for (char o = choice; o < max; o++) {
-                            if (option_densities[o % options] < option_densities[choice]) {
+                            if (option_preference[o % options] > option_preference[choice]) {
                                 choice = o % options;
                             }
                         }
@@ -76,7 +70,7 @@ int main() {
                 score_average += current_score;
             }
             char save_name[100];
-            sprintf(save_name, "output_towards_less_dense/results_size-%ld_run-%ld", grid_size, run);
+            sprintf(save_name, "output_wall_hugger/results_size-%ld_run-%ld", grid_size, run);
             FILE *data_file = fopen(save_name, "w");
             fprintf(data_file, "%lf\n", score_average / (double) game_play_count);
             fclose(data_file);

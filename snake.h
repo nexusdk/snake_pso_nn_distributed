@@ -10,7 +10,6 @@ char ymod[] = {0, 0, -1, 1};
 enum gs {
     moved, ate, lost, won
 };
-double score_multiplier[] = {0, 10, 0, 100};
 const size_t max_game_moves = 1000;
 
 double *get_inputs();

@@ -2,10 +2,7 @@
 #include "nn.h"
 
 double calc_max_score() {
-    double max_score = 0;
-    for (size_t l = 1; l < (gw * gh) - 1; l++) max_score += l * score_multiplier[ate];
-    max_score += ((gw * gh) - 1) * score_multiplier[won];
-    return max_score;
+    return (gw * gh) - 1;
 }
 
 double *get_inputs() {
@@ -13,8 +10,8 @@ double *get_inputs() {
     size_t target_input = 0;
     result[target_input++] = (hx == fx) ? 0 : (hx < fx ? 1 : -1);
     result[target_input++] = (hy == fy) ? 0 : (hy < fy ? 1 : -1);
-    size_t x[] = {hx - 2, hx - 1, hx - 2, hx + 2, hx + 1, hx + 2, hx    , hx    };
-    size_t y[] = {hy - 2, hy    , hy + 2, hy - 2, hy    , hy + 2, hy - 1, hy + 1};
+    size_t x[] = {hx - 1, hx - 1, hx - 1, hx + 1, hx + 1, hx + 1, hx    , hx    };
+    size_t y[] = {hy - 1, hy    , hy + 1, hy - 1, hy    , hy + 1, hy - 1, hy + 1};
     for (char i = 0; i < 8; i++) {
         if (x[i] >= gw || y[i] >= gh) {
             result[target_input++] = -1;
@@ -89,6 +86,13 @@ char move_snake(char direction) {
         }
             // This does not allow for turn around with snake length of 2
         default: {
+            if (hx == tx && hy == ty) {
+                char old_tail = grid[tx][ty];
+                grid[hx][hy] = direction;
+                tx += xmod[old_tail];
+                ty += ymod[old_tail];
+                return moved;
+            }
             return lost;
         }
     }

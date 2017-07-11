@@ -67,7 +67,6 @@ double nn_fitness(double *weights, size_t w, size_t h) {
         size_t move_counter = 0;
         char current_state = moved;
         double current_score = 0;
-        size_t snake_length = 1;
         while (current_state != won && current_state != lost && move_counter < max_game_moves) {
             double *inputs = get_inputs();
             double *outputs = malloc(sizeof(double) * layout[layers - 1]);
@@ -80,10 +79,7 @@ double nn_fitness(double *weights, size_t w, size_t h) {
             }
             free(outputs);
             current_state = move_snake(direction);
-            current_score += score_multiplier[current_state] * (double) snake_length;
-            if (current_state == ate) {
-                snake_length++;
-            }
+            if (current_state == ate || current_state == won) current_score++;
             move_counter++;
         }
         score_average += current_score;

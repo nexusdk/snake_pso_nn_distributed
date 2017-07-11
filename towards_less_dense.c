@@ -24,7 +24,6 @@ int main() {
                 size_t move_counter = 0;
                 double current_score = 0;
                 char current_state = moved;
-                size_t snake_length = 1;
                 while (current_state != won && current_state != lost && move_counter < max_game_moves) {
                     char directions[4];
                     char choice = 0;
@@ -67,10 +66,7 @@ int main() {
                         }
                     }
                     current_state = move_snake(directions[choice]);
-                    current_score += score_multiplier[current_state] * (double) snake_length;
-                    if (current_state == ate) {
-                        snake_length++;
-                    }
+                    if (current_state == ate || current_state == won) current_score++;
                     move_counter++;
                 }
                 score_average += current_score;

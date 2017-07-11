@@ -159,7 +159,6 @@ int main(size_t argc, char *args[]) {
     size_t move_counter = 0;
     char current_state = moved;
     double current_score = 0;
-    size_t snake_length = 1;
     XEvent e;
     while (current_state != won && current_state != lost && move_counter < max_game_moves) {
         XNextEvent(dis, &e);
@@ -179,10 +178,7 @@ int main(size_t argc, char *args[]) {
             }
             free(outputs);
             current_state = move_snake(direction);
-            current_score += score_multiplier[current_state] * (double) snake_length;
-            if (current_state == ate) {
-                snake_length++;
-            }
+            if (current_state == ate || current_state == won) current_score++;
             move_counter++;
             draw(current_score);
         }

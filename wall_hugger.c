@@ -17,16 +17,18 @@ int main() {
             grid[x] = malloc(sizeof(char) * gh);
         }
         for (size_t run = 0; run < 50; run++) {
-            double score_average = 0;
+            double total_eaten = 0;
+            double total_won = 0;
+            double total_moves = 0;
             for (size_t game_counter = 0; game_counter < game_play_count; game_counter++) {
                 reset_grid();
                 size_t move_counter = 0;
-                double current_score = 0;
+                double eaten = 0;
                 char current_state = moved;
                 while (current_state != won && current_state != lost && move_counter < max_game_moves) {
                     int mask = 0;
-                    size_t x[] = {hx - 1, hx - 1, hx - 1, hx + 1, hx + 1, hx + 1, hx    , hx    };
-                    size_t y[] = {hy - 1, hy    , hy + 1, hy - 1, hy    , hy + 1, hy - 1, hy + 1};
+                    size_t x[] = {hx - 1, hx - 1, hx - 1, hx    , hx + 1, hx + 1, hx + 1, hx    };
+                    size_t y[] = {hy + 1, hy    , hy - 1, hy - 1, hy - 1, hy    , hy + 1, hy + 1};
                     int adds[] = {1     , 2     , 4     , 8     , 16    , 32    , 64   , 128};
                     for (char i = 0; i < 8; i++) {
                         if (x[i] >= gw || y[i] >= gh || grid[x[i]][y[i]] < empty) {
@@ -40,9 +42,9 @@ int main() {
                     if (mask & 32 || mask & 64 ) option_preference[down]  = 1;
                     for (char i = 0; i < 4; i++)
                         if (xmod[i] != 0)
-                            option_preference[i] += hx + xmod[i] > hx ? fx > hx : fx < hx;
+                            option_preference[i] += (hx + xmod[i] > hx ? fx > hx : fx < hx);
                         else
-                            option_preference[i] += hy + ymod[i] > hy ? fy > hy : fy < hy;
+                            option_preference[i] += (hy + ymod[i] > hy ? fy > hy : fy < hy);
                     char directions[4];
                     char choice = 0;
                     char options = 0;
@@ -60,15 +62,21 @@ int main() {
                         }
                     }
                     current_state = move_snake(directions[choice]);
-                    if (current_state == ate || current_state == won) current_score++;
+                    if (current_state == ate || current_state == won) eaten++;
                     move_counter++;
                 }
-                score_average += current_score;
+                total_eaten += eaten;
+                total_moves += move_counter;
+                if (current_state == won) total_won += 1;
             }
             char save_name[100];
             sprintf(save_name, "output_wall_hugger/results_size-%ld_run-%ld", grid_size, run);
             FILE *data_file = fopen(save_name, "w");
-            fprintf(data_file, "%lf\n", score_average / (double) game_play_count);
+            fprintf(data_file, "%lf %lf %lf\n",
+                    total_eaten / (double) game_play_count,
+                    total_won / (double) game_play_count,
+                    total_moves / (double) game_play_count
+            );
             fclose(data_file);
         }
         for (size_t x = 0; x < gw; x++) {

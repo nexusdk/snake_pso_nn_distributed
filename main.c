@@ -46,7 +46,7 @@ void write_to_socket(int fd, void *source, size_t expected_size, char *fail_mess
     }
 }
 
-double nn_fitness(double *weights, size_t w, size_t h) {
+void nn_fitness(double *weights, size_t w, size_t h, double * average_eaten, double * average_games_won, double * average_number_of_moves) {
     if (gw != w || gh != h) {
         if (grid) {
             for (size_t x = 0; x < gw; x++) {
@@ -61,12 +61,14 @@ double nn_fitness(double *weights, size_t w, size_t h) {
             grid[x] = malloc(sizeof(char) * gh);
         }
     }
-    double score_average = 0;
+    double total_eaten = 0;
+    double total_won = 0;
+    double total_moves = 0;
     for (size_t game_counter = 0; game_counter < game_play_count; game_counter++) {
         reset_grid();
         size_t move_counter = 0;
         char current_state = moved;
-        double current_score = 0;
+        double eaten = 0;
         while (current_state != won && current_state != lost && move_counter < max_game_moves) {
             double *inputs = get_inputs();
             double *outputs = malloc(sizeof(double) * layout[layers - 1]);
@@ -79,12 +81,16 @@ double nn_fitness(double *weights, size_t w, size_t h) {
             }
             free(outputs);
             current_state = move_snake(direction);
-            if (current_state == ate || current_state == won) current_score++;
+            if (current_state == ate || current_state == won) eaten++;
             move_counter++;
         }
-        score_average += current_score;
+        total_eaten += eaten;
+        total_moves += move_counter;
+        if (current_state == won) total_won += 1;
     }
-    return score_average / (double) game_play_count;
+    *average_eaten = total_eaten / (double) game_play_count;
+    *average_games_won = total_won / (double) game_play_count;
+    *average_number_of_moves = total_moves / (double) game_play_count;
 }
 
 
@@ -98,7 +104,7 @@ size_t send_work(int remote_fd, size_t send_index, double **positions, size_t di
     return send_index + 1;
 }
 
-void calculate_fitness(size_t particles, double *fitness, size_t dimensions, double **positions) {
+void calculate_fitness(size_t particles, double *fitness, double *won, double *moves, size_t dimensions, double **positions) {
     size_t result_count = 0;
     size_t send_index = 0;
     // WARNING: Here we assume we have less workers than particles.
@@ -127,6 +133,10 @@ void calculate_fitness(size_t particles, double *fitness, size_t dimensions, dou
                              "Read the wrong message size on result index");
             read_from_socket(new_connection, &fitness[result_index], sizeof(fitness[result_index]),
                              "Read the wrong message size on fitness value");
+            read_from_socket(new_connection, &won[result_index], sizeof(won[result_index]),
+                             "Read the wrong message size on won value");
+            read_from_socket(new_connection, &moves[result_index], sizeof(moves[result_index]),
+                             "Read the wrong message size on fitness value");
             result_count++;
         } else if (message_type == 'n') {
             struct sockaddr_in *tmp = malloc(sizeof(struct sockaddr_in) * (worker_count + 1));
@@ -154,15 +164,19 @@ void calculate_fitness(size_t particles, double *fitness, size_t dimensions, dou
 
 void pso(
         size_t particles, size_t iterations, size_t dimensions, double w, double c1, double c2,
-        double *lower_limits, double *upper_limits, size_t run, size_t size, double max_score
+        double *lower_limits, double *upper_limits, size_t run, size_t size
 ) {
     double **positions = malloc(sizeof(double *) * particles);
     double **velocities = malloc(sizeof(double *) * particles);
     double *fitness = malloc(sizeof(double) * particles);
+    double *won_avg = malloc(sizeof(double) * particles);
+    double *moves_avg = malloc(sizeof(double) * particles);
     double *cognitive_fitness = malloc(sizeof(double) * particles);
     double **cognitive = malloc(sizeof(double *) * particles);
     double *social = malloc(sizeof(double) * dimensions);
     double social_fitness = -1;
+    double social_won_avg = -1;
+    double social_moves_avg = -1;
     for (size_t i = 0; i < particles; i++) {
         positions[i] = malloc(sizeof(double) * dimensions);
         cognitive[i] = malloc(sizeof(double) * dimensions);
@@ -174,19 +188,20 @@ void pso(
             velocities[i][d] = 0;
         }
     }
-    calculate_fitness(particles, fitness, dimensions, positions);
+    calculate_fitness(particles, fitness, won_avg, moves_avg, dimensions, positions);
     for (size_t i = 0; i < particles; i++) {
         cognitive_fitness[i] = fitness[i];
         if (social_fitness < fitness[i]) {
             social_fitness = fitness[i];
+            social_won_avg = won_avg[i];
+            social_moves_avg = moves_avg[i];
             for (size_t d = 0; d < dimensions; d++) {
                 social[d] = positions[i][d];
             }
         }
     }
-//    size_t stag = 0;
     for (size_t it = 0; it < iterations; it++) {
-        printf("Now at iteration %ld with score %lf\n", it, social_fitness);
+        printf("Now at iteration %ld with eating %lf and winning %lf\n", it, social_fitness, social_won_avg);
         // Velocity and position update
         for (size_t i = 0; i < particles; i++) {
             for (size_t d = 0; d < dimensions; d++) {
@@ -194,22 +209,9 @@ void pso(
                                    (c1 * ((double) rand() / (double) RAND_MAX) * (cognitive[i][d] - positions[i][d])) +
                                    (c2 * ((double) rand() / (double) RAND_MAX) * (social[d] - positions[i][d]));
                 positions[i][d] += velocities[i][d];
-//                if (positions[i][d] > upper_limits[d]) positions[i][d] = upper_limits[d];
-//                else if (positions[i][d] < lower_limits[d]) positions[i][d] = lower_limits[d];
             }
         }
-//        if (stag++ == 100) {
-//            printf("Scrambling the brains..\n");
-//            for (size_t i = 0; i < particles; i++) {
-//                for (size_t d = 0; d < dimensions; d++) {
-//                    positions[i][d] =
-//                            lower_limits[d] + ((upper_limits[d] - lower_limits[d]) * ((double) rand() / (double) RAND_MAX));
-//                    velocities[i][d] = 0;
-//                }
-//            }
-//            stag = 0;
-//        }
-        calculate_fitness(particles, fitness, dimensions, positions);
+        calculate_fitness(particles, fitness, won_avg, moves_avg, dimensions, positions);
         // Cognitive and social update
         for (size_t i = 0; i < particles; i++) {
             if (fitness[i] > cognitive_fitness[i]) {
@@ -222,16 +224,17 @@ void pso(
                         social[d] = positions[i][d];
                     }
                     social_fitness = fitness[i];
-//                    stag = 0;
+                    social_won_avg = won_avg[i];
+                    social_moves_avg = moves_avg[i];
                 }
             }
         }
         // extra stopping power
-        if (max_score == social_fitness) {
+        if (social_won_avg == 1.0) {
             it = iterations;
         }
     }
-    printf("Social best calculated as: %lf at position:\n", social_fitness);
+    printf("Social best calculated as: %lf winning %lf at position:\n", social_fitness, social_won_avg);
     for (size_t d = 0; d < dimensions; d++) {
         printf("%lf,", social[d]);
     }
@@ -240,6 +243,8 @@ void pso(
     sprintf(save_name, "results_size-%ld_run-%ld.bin", size, run);
     FILE *data_file = fopen(save_name, "wb");
     fwrite(&social_fitness, sizeof(social_fitness), 1, data_file);
+    fwrite(&social_won_avg, sizeof(social_won_avg), 1, data_file);
+    fwrite(&social_moves_avg, sizeof(social_moves_avg), 1, data_file);
     fwrite(&dimensions, sizeof(dimensions), 1, data_file);
     fwrite(social, sizeof(double), dimensions, data_file);
     fwrite(&layers, sizeof(layers), 1, data_file);
@@ -252,6 +257,8 @@ void pso(
     printf("Data saved to %s\n", save_name);
 
     free(fitness);
+    free(won_avg);
+    free(moves_avg);
     free(cognitive_fitness);
     free(social);
     for (size_t i = 0; i < particles; i++) {
@@ -367,7 +374,7 @@ int main(int argc, char *argv[]) {
                 double max_score = calc_max_score();
                 printf("Started server. Max score is: %lf\n", max_score);
                 for (size_t run = 0; run < 50; run++) {
-                    pso(100, 1000, dimensions, 0.72, 1.42, 1.42, lower_limits, upper_limits, run, size, max_score);
+                    pso(100, 1000, dimensions, 0.72, 1.42, 1.42, lower_limits, upper_limits, run, size);
                 }
             }
             for (size_t i = 0; i < worker_count; i++) {
@@ -389,7 +396,6 @@ int main(int argc, char *argv[]) {
             }
             double *particle_position = malloc(sizeof(double) * dimensions);
             size_t my_index;
-            double result;
             int remote_socket_fd;
             if ((remote_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
                 failure("Could not create socket");
@@ -404,11 +410,14 @@ int main(int argc, char *argv[]) {
                             "Did not write port successfully");
             char running = 1;
             size_t h;
+            double average_eaten;
+            double average_games_won;
+            double average_number_of_game_moves;
             while (running) {
                 while ((message_type = read_work(remote_socket_fd, &my_index, particle_position, dimensions, &h, &w)) ==
                        'w') {
                     close(remote_socket_fd);
-                    result = nn_fitness(particle_position, w, h);
+                    nn_fitness(particle_position, w, h, &average_eaten, &average_games_won, &average_number_of_game_moves);
                     if ((remote_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
                         failure("Could not create socket");
                     }
@@ -421,7 +430,9 @@ int main(int argc, char *argv[]) {
                                     "Did not write successfully on message");
                     write_to_socket(remote_socket_fd, &my_index, sizeof(my_index),
                                     "Did not write successfully on result index");
-                    write_to_socket(remote_socket_fd, &result, sizeof(result), "Did not write successfully on result");
+                    write_to_socket(remote_socket_fd, &average_eaten, sizeof(average_eaten), "Did not write successfully on eaten");
+                    write_to_socket(remote_socket_fd, &average_games_won, sizeof(average_games_won), "Did not write successfully on won");
+                    write_to_socket(remote_socket_fd, &average_number_of_game_moves, sizeof(average_number_of_game_moves), "Did not write successfully on moves");
                 }
                 if (message_type == 's') {
                     // TODO: Perhaps respond to the one who sent you work..?

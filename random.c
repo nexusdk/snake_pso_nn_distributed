@@ -45,7 +45,7 @@ int main() {
             char save_name[100];
             sprintf(save_name, "output_random/results_size-%ld_run-%ld", grid_size, run);
             FILE *data_file = fopen(save_name, "w");
-            fprintf(data_file, "%lf %lf %lf\n",
+            fprintf(data_file, "%.20g %.20g %.20g\n",
                     total_eaten / (double) game_play_count,
                     total_won / (double) game_play_count,
                     total_moves / (double) game_play_count

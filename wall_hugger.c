@@ -56,7 +56,7 @@ int main() {
                         choice = rand() % options;
                         char max = options + choice;
                         for (char o = choice; o < max; o++) {
-                            if (option_preference[o % options] > option_preference[choice]) {
+                            if (option_preference[directions[o % options]] > option_preference[directions[choice]]) {
                                 choice = o % options;
                             }
                         }
@@ -72,7 +72,7 @@ int main() {
             char save_name[100];
             sprintf(save_name, "output_wall_hugger/results_size-%ld_run-%ld", grid_size, run);
             FILE *data_file = fopen(save_name, "w");
-            fprintf(data_file, "%lf %lf %lf\n",
+            fprintf(data_file, "%.20g %.20g %.20g\n",
                     total_eaten / (double) game_play_count,
                     total_won / (double) game_play_count,
                     total_moves / (double) game_play_count

@@ -134,9 +134,13 @@ int main(size_t argc, char *args[]) {
     srand((unsigned) time(NULL));
     init_x();
     double fitness;
+    double won_avg;
+    double move_avg;
     size_t saved_dimensions;
     FILE *data_file = fopen(args[1], "rb");
     fread(&fitness, sizeof(fitness), 1, data_file);
+    fread(&won_avg, sizeof(won_avg), 1, data_file);
+    fread(&move_avg, sizeof(move_avg), 1, data_file);
     fread(&saved_dimensions, sizeof(saved_dimensions), 1, data_file);
     double *weights = malloc(sizeof(double) * saved_dimensions);
     fread(weights, sizeof(double), saved_dimensions, data_file);
